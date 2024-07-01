@@ -48,7 +48,7 @@ mkdir -p Downloads
 
 #Download required install scripts
 wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/xfce.sh
-wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/proot.sh
+wget https://github.com/phoenixbyrd/TheKingFireS/raw/test-patch/proot.sh
 wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/utils.sh
 chmod +x *.sh
 

@@ -4,13 +4,16 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# set arch
+arch=$(dpkg --print-architecture)
+
 finish() {
-  local ret=$?
-  if [ ${ret} -ne 0 ] && [ ${ret} -ne 130 ]; then
-    echo
-    echo "ERROR: Failed to setup XFCE on Termux."
-    echo "Please refer to the error message(s) above"
-  fi
+	local ret=$?
+	if [ ${ret} -ne 0 ] && [ ${ret} -ne 130 ]; then
+		echo
+		echo "ERROR: Failed to setup XFCE on Termux."
+		echo "Please refer to the error message(s) above"
+	fi
 }
 
 trap finish EXIT
@@ -48,9 +51,8 @@ proot-distro login debian --shared-tmp -- env DISPLAY=:1.0 groupadd wheel
 proot-distro login debian --shared-tmp -- env DISPLAY=:1.0 useradd -m -g users -G wheel,audio,video,storage -s /bin/bash "$username"
 
 #Add user to sudoers
-chmod u+rw $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers
-echo "$username ALL=(ALL) NOPASSWD:ALL" | tee -a $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers > /dev/null
-chmod u-w  $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers
+echo "$username ALL=(ALL) NOPASSWD:ALL" > $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers.d/$username
+chmod u-w  $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers.d/$username
 
 #Set proot DISPLAY
 echo "export DISPLAY=:1.0" >> $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
@@ -125,37 +127,37 @@ username=$(basename "$user_dir"/*)
 action=$(zenity --list --title="Choose Action" --text="Select an action:" --radiolist --column="" --column="Action" TRUE "Copy .desktop file" FALSE "Remove .desktop file")
 
 if [[ -z $action ]]; then
-  zenity --info --text="No action selected. Quitting..." --title="Operation Cancelled"
-  exit 0
+	zenity --info --text="No action selected. Quitting..." --title="Operation Cancelled"
+	exit 0
 fi
 
 if [[ $action == "Copy .desktop file" ]]; then
-  selected_file=$(zenity --file-selection --title="Select .desktop File" --file-filter="*.desktop" --filename="../usr/var/lib/proot-distro/installed-rootfs/debian/usr/share/applications")
+	selected_file=$(zenity --file-selection --title="Select .desktop File" --file-filter="*.desktop" --filename="../usr/var/lib/proot-distro/installed-rootfs/debian/usr/share/applications")
 
-  if [[ -z $selected_file ]]; then
-    zenity --info --text="No file selected. Quitting..." --title="Operation Cancelled"
-    exit 0
-  fi
+	if [[ -z $selected_file ]]; then
+		zenity --info --text="No file selected. Quitting..." --title="Operation Cancelled"
+		exit 0
+	fi
 
-  desktop_filename=$(basename "$selected_file")
+	desktop_filename=$(basename "$selected_file")
 
-  cp "$selected_file" "../usr/share/applications/"
-  sed -i "s/^Exec=\(.*\)$/Exec=proot-distro login debian --user $username --shared-tmp -- env DISPLAY=:1.0 \1/" "../usr/share/applications/$desktop_filename"
+	cp "$selected_file" "../usr/share/applications/"
+	sed -i "s/^Exec=\(.*\)$/Exec=proot-distro login debian --user $username --shared-tmp -- env DISPLAY=:1.0 \1/" "../usr/share/applications/$desktop_filename"
 
-  zenity --info --text="Operation completed successfully!" --title="Success"
+	zenity --info --text="Operation completed successfully!" --title="Success"
 elif [[ $action == "Remove .desktop file" ]]; then
-  selected_file=$(zenity --file-selection --title="Select .desktop File to Remove" --file-filter="*.desktop" --filename="../usr/share/applications")
+	selected_file=$(zenity --file-selection --title="Select .desktop File to Remove" --file-filter="*.desktop" --filename="../usr/share/applications")
 
-  if [[ -z $selected_file ]]; then
-    zenity --info --text="No file selected for removal. Quitting..." --title="Operation Cancelled"
-    exit 0
-  fi
+	if [[ -z $selected_file ]]; then
+		zenity --info --text="No file selected for removal. Quitting..." --title="Operation Cancelled"
+		exit 0
+	fi
 
-  desktop_filename=$(basename "$selected_file")
+	desktop_filename=$(basename "$selected_file")
 
-  rm "$selected_file"
+	rm "$selected_file"
 
-  zenity --info --text="File '$desktop_filename' has been removed successfully!" --title="Success"
+	zenity --info --text="File '$desktop_filename' has been removed successfully!" --title="Success"
 fi
 
 EOF
@@ -206,9 +208,19 @@ dpkg -i termux-x11-nightly-1.03.00-0-all.deb
 rm termux-x11-nightly-1.03.00-0-all.deb
 #apt-mark hold termux-x11-nightly
 
-wget https://github.com/termux/termux-x11/releases/download/nightly/app-arm64-v8a-debug.apk
-mv app-arm64-v8a-debug.apk $HOME/storage/downloads/
-termux-open $HOME/storage/downloads/app-arm64-v8a-debug.apk
+if [ "$arch" = "i686" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-x86-debug.apk
+	termux-open $HOME/storage/downloads/app-x86-debug.apk
+elif [ "$arch" = "x86_64" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-x86_64-debug.apk
+	termux-open $HOME/storage/downloads/app-x86_64-debug.apk
+elif [ "$arch" = "arm" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-armeabi-v7a-debug.apk
+	termux-open $HOME/storage/downloads/app-armeabi-v7a-debug.apk
+elif [ "$arch" = "aarch64" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-arm64-v8a-debug.apk
+	termux-open $HOME/storage/downloads/app-arm64-v8a-debug.apk
+fi
 
 #Create kill_termux_x11.desktop
 echo "[Desktop Entry]
@@ -252,8 +264,8 @@ cat <<'EOF' > $HOME/../usr/bin/kill_termux_x11
 
 # Check if Apt, dpkg, or Nala is running in Termux or Proot
 if pgrep -f 'apt|apt-get|dpkg|nala'; then
-  zenity --info --text="Software is currently installing in Termux or Proot. Please wait for these processes to finish before continuing."
-  exit 1
+	zenity --info --text="Software is currently installing in Termux or Proot. Please wait for these processes to finish before continuing."
+	exit 1
 fi
 
 # Get the process IDs of Termux-X11 and XFCE sessions
@@ -266,11 +278,11 @@ echo "XFCE PID: $xfce_pid"
 
 # Check if the process IDs exist
 if [ -n "$termux_x11_pid" ] && [ -n "$xfce_pid" ]; then
-  # Kill the processes
-  kill -9 "$termux_x11_pid" "$xfce_pid"
-  zenity --info --text="Termux-X11 and XFCE sessions closed."
+	# Kill the processes
+	kill -9 "$termux_x11_pid" "$xfce_pid"
+	zenity --info --text="Termux-X11 and XFCE sessions closed."
 else
-  zenity --info --text="Termux-X11 or XFCE session not found."
+	zenity --info --text="Termux-X11 or XFCE session not found."
 fi
 
 info_output=$(termux-info)

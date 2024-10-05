@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# set arch
+arch=$(dpkg --print-architecture)
+
 cat <<'EOF' > $PREFIX/bin/prun
 #!/bin/bash
 varname=$(basename $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/*)
@@ -89,6 +92,7 @@ StartupNotify=false
 " > $PREFIX/share/applications/cp2menu.desktop 
 chmod +x $PREFIX/share/applications/cp2menu.desktop 
 
+if [ "$arch" = "aarch64" ]; then
 #App Installer Utility .. For installing additional applications not available in Termux or Debian proot repositories. 
 cat <<'EOF' > "$PREFIX/bin/app-installer"
 #!/bin/bash
@@ -155,6 +159,9 @@ Terminal=false
 StartupNotify=false
 " > "$HOME/Desktop/app-installer.desktop"
 chmod +x "$HOME/Desktop/app-installer.desktop"
+fi
+else
+	echo "Unsupported ""$arch"" architecture detected, App Installer won't be installed."
 fi
 
 #Start script

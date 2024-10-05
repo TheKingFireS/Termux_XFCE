@@ -4,6 +4,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# set arch
+arch=$(dpkg --print-architecture)
+
 finish() {
   local ret=$?
   if [ ${ret} -ne 0 ] && [ ${ret} -ne 130 ]; then
@@ -31,9 +34,8 @@ pd login debian --shared-tmp -- env DISPLAY=:1.0 groupadd wheel
 pd login debian --shared-tmp -- env DISPLAY=:1.0 useradd -m -g users -G wheel,audio,video,storage -s /bin/bash "$username"
 
 #Add user to sudoers
-chmod u+rw $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers
-echo "$username ALL=(ALL) NOPASSWD:ALL" | tee -a $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers > /dev/null
-chmod u-w  $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers
+echo "$username ALL=(ALL) NOPASSWD:ALL" > $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers.d/$username
+chmod u-w  $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers.d/$username
 
 #Set proot DISPLAY
 echo "export DISPLAY=:1.0" >> $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
@@ -81,5 +83,9 @@ mkdir $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fonts
 cp .fonts/NotoColorEmoji-Regular.ttf $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fonts/ 
 
 #Setup Hardware Acceleration
-pd login debian --shared-tmp -- env DISPLAY=:1.0 wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/mesa-vulkan-kgsl_24.1.0-devel-20240120_arm64.deb
-pd login debian --shared-tmp -- env DISPLAY=:1.0 sudo apt install -y ./mesa-vulkan-kgsl_24.1.0-devel-20240120_arm64.deb
+if [ "$arch" = "aarch64" ]; then
+	pd login debian --shared-tmp -- env DISPLAY=:1.0 wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/mesa-vulkan-kgsl_24.1.0-devel-20240120_arm64.deb
+	pd login debian --shared-tmp -- env DISPLAY=:1.0 sudo apt install -y ./mesa-vulkan-kgsl_24.1.0-devel-20240120_arm64.deb
+else
+	echo "Unsupported ""$arch"" architecture detected, hardware acceleration won't be enabled."
+fi

@@ -55,7 +55,7 @@ echo "$username ALL=(ALL) NOPASSWD:ALL" > $PREFIX/var/lib/proot-distro/installed
 chmod u-w  $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/sudoers.d/$username
 
 #Set proot DISPLAY
-echo "export DISPLAY=:1.0" >> $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
+echo "export DISPLAY=:1.0" >> $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
 
 #Set proot aliases
 echo "
@@ -66,7 +66,7 @@ alias apt='sudo nala '
 alias install='nala install '
 alias uninstall='nala remove '
 alias start='echo "please run from termux, not debian proot."'
-" >> $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
+" >> $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
 
 #Set proot timezone
 timezone=$(getprop persist.sys.timezone)
@@ -79,7 +79,7 @@ setup_xfce() {
 pkg install git neofetch virglrenderer-android papirus-icon-theme xfce4 xfce4-goodies eza pavucontrol-qt bat jq nala wmctrl firefox netcat-openbsd termux-x11-nightly eza -y
 
 #Create .bashrc
-cp $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/etc/skel/.bashrc $HOME/.bashrc
+cp $PREFIX/var/lib/proot-distro/installed-rootfs/debian/etc/skel/.bashrc $HOME/.bashrc
 
 #Enable Sound
 echo "
@@ -103,12 +103,12 @@ alias uninstall='nala remove $@ '
 " >> $HOME/.bashrc
 
 #Put Firefox icon on Desktop
-cp $HOME/../usr/share/applications/firefox.desktop $HOME/Desktop 
+cp $PREFIX/share/applications/firefox.desktop $HOME/Desktop 
 chmod +x $HOME/Desktop/firefox.desktop
 
 cat <<'EOF' > ../usr/bin/prun
 #!/bin/bash
-varname=$(basename $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/*)
+varname=$(basename $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/*)
 proot-distro login debian --user $varname --shared-tmp -- env DISPLAY=:1.0 $@
 
 EOF
@@ -176,28 +176,30 @@ Terminal=false
 StartupNotify=false
 " > $HOME/Desktop/cp2menu.desktop 
 chmod +x $HOME/Desktop/cp2menu.desktop
-mv $HOME/Desktop/cp2menu.desktop $HOME/../usr/share/applications
+mv $HOME/Desktop/cp2menu.desktop $PREFIX/share/applications
 
-#App Installer Utility
-git clone https://github.com/phoenixbyrd/App-Installer.git
-mv $HOME/App-Installer $HOME/.App-Installer
-chmod +x $HOME/.App-Installer/*
+if [ "$arch" = "aarch64" ]; then
+	#App Installer Utility
+	git clone https://github.com/phoenixbyrd/App-Installer.git .App-Installer
+	chmod +x $HOME/.App-Installer/*
 
-echo "[Desktop Entry]
-Version=1.0
-Type=Application
-Name=App Installer
-Comment=
-Exec=/data/data/com.termux/files/home/.App-Installer/app-installer
-Icon=package-install
-Categories=System;
-Path=
-Terminal=false
-StartupNotify=false
-" > $HOME/Desktop/App-Installer.desktop
-chmod +x $HOME/Desktop/App-Installer.desktop
-cp $HOME/Desktop/App-Installer.desktop $HOME/../usr/share/applications
-
+	echo "[Desktop Entry]
+	Version=1.0
+	Type=Application
+	Name=App Installer
+	Comment=
+	Exec=/data/data/com.termux/files/home/.App-Installer/app-installer
+	Icon=package-install
+	Categories=System;
+	Path=
+	Terminal=false
+	StartupNotify=false
+	" > $HOME/Desktop/App-Installer.desktop
+	chmod +x $HOME/Desktop/App-Installer.desktop
+	cp $HOME/Desktop/App-Installer.desktop $PREFIX/share/applications
+else
+	echo "Unsupported ""$arch"" architecture detected, App Installer won't be installed."
+fi
 }
 
 setup_termux_x11() {
@@ -235,7 +237,7 @@ Path=
 StartupNotify=false
 " > $HOME/Desktop/kill_termux_x11.desktop
 chmod +x $HOME/Desktop/kill_termux_x11.desktop
-mv $HOME/Desktop/kill_termux_x11.desktop $HOME/../usr/share/applications
+mv $HOME/Desktop/kill_termux_x11.desktop $PREFIX/share/applications
 
 #Create XFCE Start and Shutdown
 cat <<'EOF' > start
@@ -256,10 +258,10 @@ kill "$process_id" > /dev/null 2>&1
 EOF
 
 chmod +x start
-mv start $HOME/../usr/bin
+mv start $PREFIX/bin
 
 #Shutdown Utility
-cat <<'EOF' > $HOME/../usr/bin/kill_termux_x11
+cat <<'EOF' > $PREFIX/bin/kill_termux_x11
 #!/bin/bash
 
 # Check if Apt, dpkg, or Nala is running in Termux or Proot
@@ -294,41 +296,41 @@ exit 0
 
 EOF
 
-chmod +x $HOME/../usr/bin/kill_termux_x11
+chmod +x $PREFIX/bin/kill_termux_x11
 }
 
 setup_theme() {
 #Download Wallpaper
 wget https://raw.githubusercontent.com/phoenixbyrd/Termux_XFCE/main/peakpx.jpg
 wget https://raw.githubusercontent.com/phoenixbyrd/Termux_XFCE/main/dark_waves.png
-mv peakpx.jpg $HOME/../usr/share/backgrounds/xfce/
-mv dark_waves.png $HOME/../usr/share/backgrounds/xfce/
+mv peakpx.jpg $PREFIX/share/backgrounds/xfce/
+mv dark_waves.png $PREFIX/share/backgrounds/xfce/
 
 #Install WhiteSur-Dark Theme
 wget https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/refs/tags/2023-04-26.zip
 unzip 2023-04-26.zip
 tar -xf WhiteSur-gtk-theme-2023-04-26/release/WhiteSur-Dark-44-0.tar.xz
-mv WhiteSur-Dark/ $HOME/../usr/share/themes/
+mv WhiteSur-Dark/ $PREFIX/share/themes/
 rm -rf WhiteSur*
 rm 2023-04-26.zip
 
 #Install Fluent Cursor Icon Theme
 wget https://github.com/vinceliuice/Fluent-icon-theme/archive/refs/tags/2023-02-01.zip
 unzip 2023-02-01.zip
-mv Fluent-icon-theme-2023-02-01/cursors/dist $HOME/../usr/share/icons/ 
-mv Fluent-icon-theme-2023-02-01/cursors/dist-dark $HOME/../usr/share/icons/
-cp -r $HOME/../usr/share/icons/dist-dark $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/usr/share/icons/dist-dark
+mv Fluent-icon-theme-2023-02-01/cursors/dist $PREFIX/share/icons/ 
+mv Fluent-icon-theme-2023-02-01/cursors/dist-dark $PREFIX/share/icons/
+cp -r $PREFIX/share/icons/dist-dark $PREFIX/var/lib/proot-distro/installed-rootfs/debian/usr/share/icons/dist-dark
 rm -rf $HOME//Fluent*
 rm 2023-02-01.zip
 
-cat <<'EOF' > $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.Xresources
+cat <<'EOF' > $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.Xresources
 Xcursor.theme: dist-dark
 EOF
 
 #Setup Fonts
 wget https://github.com/microsoft/cascadia-code/releases/download/v2111.01/CascadiaCode-2111.01.zip
 mkdir .fonts 
-mkdir $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fonts/
+mkdir $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fonts/
 unzip CascadiaCode-2111.01.zip
 mv otf/static/* .fonts/ && rm -rf otf
 mv ttf/* .fonts/ && rm -rf ttf/
@@ -343,7 +345,7 @@ rm readme.md
 
 wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/NotoColorEmoji-Regular.ttf
 mv NotoColorEmoji-Regular.ttf .fonts
-cp .fonts/NotoColorEmoji-Regular.ttf $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fonts/ 
+cp .fonts/NotoColorEmoji-Regular.ttf $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fonts/ 
 
 #Setup Fancybash Termux
 wget https://raw.githubusercontent.com/phoenixbyrd/Termux_XFCE/main/fancybash.sh
@@ -353,9 +355,9 @@ sed -i "326s/\\\u/$username/" $HOME/.fancybash.sh
 sed -i "327s/\\\h/termux/" $HOME/.fancybash.sh
 
 #Setup Fancybash Proot
-cp .fancybash.sh $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username
-echo "source ~/.fancybash.sh" >> $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
-sed -i '327s/termux/proot/' $HOME/../usr/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fancybash.sh
+cp .fancybash.sh $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username
+echo "source ~/.fancybash.sh" >> $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.bashrc
+sed -i '327s/termux/proot/' $PREFIX/var/lib/proot-distro/installed-rootfs/debian/home/$username/.fancybash.sh
 
 wget https://github.com/phoenixbyrd/Termux_XFCE/raw/main/font.ttf
 mv font.ttf .termux/font.ttf

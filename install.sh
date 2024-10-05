@@ -4,13 +4,16 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# set arch
+arch=$(dpkg --print-architecture)
+
 finish() {
-  local ret=$?
-  if [ ${ret} -ne 0 ] && [ ${ret} -ne 130 ]; then
-    echo
-    echo "ERROR: Failed to setup XFCE on Termux."
-    echo "Please refer to the error message(s) above"
-  fi
+	local ret=$?
+	if [ ${ret} -ne 0 ] && [ ${ret} -ne 130 ]; then
+		echo
+		echo "ERROR: Failed to setup XFCE on Termux."
+		echo "Please refer to the error message(s) above"
+	fi
 }
 
 trap finish EXIT
@@ -63,9 +66,19 @@ echo "Installing Termux-X11 APK"
 # Wait for a single character input 
 echo ""
 read -n 1 -s -r -p "Press any key to continue..."
-wget https://github.com/termux/termux-x11/releases/download/nightly/app-arm64-v8a-debug.apk
-mv app-arm64-v8a-debug.apk $HOME/storage/downloads/
-termux-open $HOME/storage/downloads/app-arm64-v8a-debug.apk
+if [ "$arch" = "i686" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-x86-debug.apk
+	termux-open $HOME/storage/downloads/app-x86-debug.apk
+elif [ "$arch" = "x86_64" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-x86_64-debug.apk
+	termux-open $HOME/storage/downloads/app-x86_64-debug.apk
+elif [ "$arch" = "arm" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-armeabi-v7a-debug.apk
+	termux-open $HOME/storage/downloads/app-armeabi-v7a-debug.apk
+elif [ "$arch" = "aarch64" ]; then
+	wget -P $HOME/storage/downloads/ https://github.com/termux/termux-x11/releases/download/nightly/app-arm64-v8a-debug.apk
+	termux-open $HOME/storage/downloads/app-arm64-v8a-debug.apk
+fi
 
 source $PREFIX/etc/bash.bashrc
 termux-reload-settings
